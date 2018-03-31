@@ -1,0 +1,33 @@
+define ROOT C:\Program Files (x86)\nxlog
+
+Moduledir %ROOT%\modules
+CacheDir %ROOT%\data
+Pidfile %ROOT%\data\nxlog.pid
+SpoolDir %ROOT%\data
+LogFile %ROOT%\data\nxlog.log
+LogLevel INFO
+
+<Extension _json>
+    Module xm_json
+</Extension>
+
+<Input firewall_logs>
+    Module im_msvistalog
+    Query <QueryList> \
+        <Query Id="0" Path="Security"> \
+             <Select Path="Security">*[System[(EventID=5156)]] and *[EventData[Data[@Name='Direction'] = '%%14593']]</Select> \
+        </Query> \
+    </QueryList>
+    Exec if $Application =~ /nxlog.exe$/ drop();
+    Exec delete($Message);$EventReceivedTime = integer($EventReceivedTime) / 1000;to_json();
+</Input>
+
+<Output network_sensor>
+    Module      om_tcp
+    Host        192.168.145.130
+    Port        1514
+</Output>
+
+<Route network_sensor_route>
+    Path        firewall_logs => network_sensor
+</Route>

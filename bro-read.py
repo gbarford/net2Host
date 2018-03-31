@@ -1,26 +1,15 @@
 #!/usr/bin/env python
 from __future__ import unicode_literals
-from daemon import Daemon
 import json
 import pprint
 import sys
 import redis
-import os.path
-import time    
 import logging
-import signal
 import ipaddress
 import configparser
+from tailer import *
 
 
-config = configparser.ConfigParser()
-config.read('/opt/net2Host/net2Host.conf')
-
-TAILFILE=config['bro-tailer']['tailFile']
-LOGFILE=config['bro-tailer']['logFile']
-PIDFILE=config['bro-tailer']['pidFile']
-
-logging.basicConfig(filename=LOGFILE,level=logging.INFO)
 
 class dataProcess():
     def __init__(self):
@@ -91,101 +80,17 @@ class dataProcess():
                 connectKey=self.creationConnectionKey(eventJson,parConn)
                 self.addConnectionRedis(eventJson,connectKey)
 
-class tailer(Daemon):
-
-    def getInode(self,filename):
-        if not os.path.exists(filename):
-            return None
-        else:
-            return os.stat(filename)[1]
-
-    def sigtermhandler(self, signum, frame):
-        tempPosInfo=dict()
-        tempPosInfo['inode']=self.fileInode
-        tempPosInfo['offset']=self.fh.tell()
-        self.fh.seek(0,0)
-        tempPosInfo['firstLine']=self.fh.readline()
-        self.fh.close()
-        logging.debug(pprint.pprint(tempPosInfo))
-        with open(self.savePos, 'w') as outfile:
-            json.dump(tempPosInfo, outfile)
-        self.daemon_alive = False
-        sys.exit()
-
-    def run(self):
-
-        processing=dataProcess()
-        self.fileInode=None
-        self.fh=None
-        self.savePos=TAILFILE + ".cur"
-
-        posInfo=None
-
-        if os.path.isfile(self.savePos):
-            posInfo=json.load(open(self.savePos))
-
-
-        while True:
-            if os.path.isfile(TAILFILE):
-                if self.fileInode!=self.getInode(TAILFILE):
-                    if self.fh!=None:
-                        if not self.fh.closed:
-                            self.fh.close()
-                    self.fileInode=self.getInode(TAILFILE)
-                    self.fh=open(TAILFILE)
-                    if posInfo!=None:
-                        if posInfo['inode']==self.fileInode:
-                            if self.fh.readline() == posInfo['firstLine']:
-                                self.fh.seek(posInfo['offset'],0)
-                            posInfo=None
-                fileLine=self.fh.readline()
-                while fileLine:
-                    processing.process(fileLine)
-                    fileLine=self.fh.readline()
-                    
-                time.sleep(0.1)
-            else:
-                time.sleep(1)
-
 if __name__ == "__main__":
+    config = configparser.ConfigParser()
+    config.read('/opt/net2Host/net2Host.conf')
 
-    daemon = tailer(PIDFILE)
+    CONFSTORE=dict()
 
-    if len(sys.argv) == 2:
+    CONFSTORE['tailFile']=config['bro-tailer']['tailFile']
+    CONFSTORE['pidFile']=config['bro-tailer']['pidFile']
+    CONFSTORE['stateStore']=config['bro-tailer']['stateStore']
 
-        if 'start' == sys.argv[1]:
-            try:
-                daemon.start()
-            except:
-                pass
+    CONFSTORE['appName']="bro tailer"
 
-        elif 'stop' == sys.argv[1]:
-            print "Stopping ..."
-            daemon.stop()
-
-        elif 'restart' == sys.argv[1]:
-            print "Restaring ..."
-            daemon.restart()
-
-        elif 'status' == sys.argv[1]:
-            try:
-                pf = file(PIDFILE,'r')
-                pid = int(pf.read().strip())
-                pf.close()
-            except IOError:
-                pid = None
-            except SystemExit:
-                pid = None
-
-            if pid:
-                print 'Bro Tailer is running as pid %s' % pid
-            else:
-                print 'Bro Tailer is not running.'
-
-        else:
-            print "Unknown command"
-            sys.exit(2)
-        sys.exit(0)
-    else:
-        print "usage: %s start|stop|restart|status" % sys.argv[0]
-        sys.exit(2)
+    logging.basicConfig(filename=CONFSTORE['logFile'],level=logging.INFO)
+    programControl(sys.argv,CONFSTORE)

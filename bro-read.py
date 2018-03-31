@@ -7,16 +7,17 @@ import redis
 import logging
 import ipaddress
 import configparser
+import os
 from tailer import *
 
 
 
 class dataProcess():
     def __init__(self):
-        logging.info("connecting to redis DB")
-        self.rd = redis.Redis(host=config['ALL']['redisHost'], port=int(config['ALL']['redisPort']),\
-            db=int(config['ALL']['redisDb']))
-        logging.info("successful connection to redis DB")
+        logger.info("connecting to redis DB")
+        self.rd = redis.Redis(host=config['all']['redishost'], port=int(config['all']['redisport']),\
+            db=int(config['all']['redisdb']))
+        logger.info("successful connection to redis DB")
 
 
     def routableIpV4(self,ipAddressToCheck):
@@ -82,15 +83,31 @@ class dataProcess():
 
 if __name__ == "__main__":
     config = configparser.ConfigParser()
-    config.read('/opt/net2Host/net2Host.conf')
+
+    configFile=os.path.dirname(os.path.realpath(__file__)) + "/conf/net2Host.conf"  
 
     CONFSTORE=dict()
 
-    CONFSTORE['tailFile']=config['bro-tailer']['tailFile']
-    CONFSTORE['pidFile']=config['bro-tailer']['pidFile']
-    CONFSTORE['stateStore']=config['bro-tailer']['stateStore']
+    CONFSTORE['appname']=os.path.basename(__file__).split(".")[0]
 
-    CONFSTORE['appName']="bro tailer"
+    config.read(configFile)
 
-    logging.basicConfig(filename=CONFSTORE['logFile'],level=logging.INFO)
-    programControl(sys.argv,CONFSTORE)
+    logLevel=logging.getLevelName(config['all']['loglevel'])
+
+    for confKey, confValue in config[CONFSTORE['appname']].iteritems():
+        CONFSTORE[confKey]=str(confValue)
+
+    loggerName=CONFSTORE['appname'] + " logger"
+
+    logger=logging.getLogger(loggerName)
+    logger.setLevel(logLevel)
+
+    handlerFile=logging.FileHandler(CONFSTORE['logfile'])
+    handlerFile.setLevel(logLevel)
+
+    logger.addHandler(handlerFile)
+    logger.debug(loggerName + " started logging")
+
+    processing=dataProcess()
+
+    programControl(sys.argv,CONFSTORE,loggerName,processing)

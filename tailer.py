@@ -9,33 +9,44 @@ import logging
 
 CONFSTORE = None
 
+logger = None
+
+processing = None
+
 class tailer(Daemon):
 
     def getInode(self,filename):
+        global logger
+
         if not os.path.exists(filename):
             return None
         else:
             return os.stat(filename)[1]
 
     def sigtermhandler(self, signum, frame):
+        global logger
+
         tempPosInfo=dict()
         tempPosInfo['inode']=self.fileInode
         tempPosInfo['offset']=self.fh.tell()
         self.fh.seek(0,0)
         tempPosInfo['firstLine']=self.fh.readline()
         self.fh.close()
-        logging.debug(pprint.pprint(tempPosInfo))
+        logger.debug(pprint.pprint(tempPosInfo))
         with open(self.savePos, 'w') as outfile:
             json.dump(tempPosInfo, outfile)
         self.daemon_alive = False
         sys.exit()
 
     def run(self):
+        global logger
+        global processing
+ 
+        logger.debug('Run function started')
 
-        processing=dataProcess()
         self.fileInode=None
         self.fh=None
-        self.savePos=CONFSTORE['stateStore']
+        self.savePos=CONFSTORE['statestore']
 
         posInfo=None
 
@@ -44,13 +55,13 @@ class tailer(Daemon):
 
 
         while True:
-            if os.path.isfile(CONFSTORE['tailFile']):
-                if self.fileInode!=self.getInode(CONFSTORE['tailFile']):
+            if os.path.isfile(CONFSTORE['tailfile']):
+                if self.fileInode!=self.getInode(CONFSTORE['tailfile']):
                     if self.fh!=None:
                         if not self.fh.closed:
                             self.fh.close()
-                    self.fileInode=self.getInode(CONFSTORE['tailFile'])
-                    self.fh=open(CONFSTORE['tailFile'])
+                    self.fileInode=self.getInode(CONFSTORE['tailfile'])
+                    self.fh=open(CONFSTORE['tailfile'])
                     if posInfo!=None:
                         if posInfo['inode']==self.fileInode:
                             if self.fh.readline() == posInfo['firstLine']:
@@ -58,6 +69,7 @@ class tailer(Daemon):
                             posInfo=None
                 fileLine=self.fh.readline()
                 while fileLine:
+                    logger.debug(fileLine)
                     processing.process(fileLine)
                     fileLine=self.fh.readline()
                     
@@ -65,12 +77,19 @@ class tailer(Daemon):
             else:
                 time.sleep(1)
 
-def programControl(args,conf):
+def programControl(args,conf,loggerName,p):
     global CONFSTORE
+    global logger
+    global processing
+
+    processing=p
 
     CONFSTORE = conf
+   
+    logger=logging.getLogger(loggerName)
+    logger.debug(loggerName + " program control begun")
  
-    daemon = tailer(CONFSTORE['pidFile'])
+    daemon = tailer(CONFSTORE['pidfile'])
 
     if len(args) == 2:
 
@@ -78,6 +97,7 @@ def programControl(args,conf):
             try:
                 daemon.start()
             except:
+                logger.info('daemon failed to start')
                 pass
 
         elif 'stop' == args[1]:
@@ -90,7 +110,7 @@ def programControl(args,conf):
 
         elif 'status' == args[1]:
             try:
-                pf = file(CONFSTORE['pidFile'],'r')
+                pf = file(CONFSTORE['pidfile'],'r')
                 pid = int(pf.read().strip())
                 pf.close()
             except IOError:
@@ -99,9 +119,9 @@ def programControl(args,conf):
                 pid = None
 
             if pid:
-                print '%s is running as pid %s' % CONFSTORE['appName'] pid
+                print '%s is running as pid %s' % (CONFSTORE['appname'], pid)
             else:
-                print '%s is not running.' % CONFSTORE['appName']
+                print '%s is not running.' % CONFSTORE['appname']
 
         else:
             print "Unknown command"

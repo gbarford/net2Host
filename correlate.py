@@ -20,6 +20,8 @@ while True:
             if rd.hexists(key,"hostApp") and rd.hexists(key,"ja3"):
                 app=rd.hget(key,"hostApp")
                 ja3=rd.hget(key,"ja3")
+                print("JA3: " + ja3 + " app: " + app + " src: " + rd.hget(key,"id.orig_h") \
+                          + " dst: " + rd.hget(key,"id.resp_h"))
                 if rd.exists(app):
                     if not rd.sismember(app,ja3):
                         print("New JA3: " + ja3 + " for app: " + app + " src: " + rd.hget(key,"id.orig_h") \

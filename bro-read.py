@@ -1,41 +1,24 @@
 #!/usr/bin/env python
 from __future__ import unicode_literals
 import json
-import pprint
 import sys
 import redis
 import logging
 import ipaddress
-import configparser
 import os
 from tailer import *
+from helperFunctions import *
 
 
 
 class dataProcess():
-    def __init__(self):
+    def __init__(self,config,loggerName):
+        global logger
+        logger=logging.getLogger(loggerName)
         logger.info("connecting to redis DB")
         self.rd = redis.Redis(host=config['all']['redishost'], port=int(config['all']['redisport']),\
             db=int(config['all']['redisdb']))
         logger.info("successful connection to redis DB")
-
-
-    def routableIpV4(self,ipAddressToCheck):
-        if ipAddressToCheck.version != 4:
-            return False
-        if ipAddressToCheck.is_multicast:
-            return False
-        if ipAddressToCheck.is_loopback:
-            return False
-        if str(ipAddressToCheck) == "0.0.0.0":
-            return False
-        if str(ipAddressToCheck) == "255.255.255.255":
-            return False
-        if ipAddressToCheck.is_private:
-            return True
-        if ipAddressToCheck.is_global:
-            return True
-        return False
 
 
     def checkValidConnection(self,event):
@@ -56,19 +39,15 @@ class dataProcess():
         return True
 
 
-    def creationConnectionKey(self,event,conn):
-        key = 'TCP' \
-            + '-' + str(conn['srcIP']) \
-            + ':' + str(conn['srcPort']) \
-            + '-' + str(conn['dstIP']) \
-            + ':' + str(conn['dstPort'])
-        return key
-
     def process(self,line):
+        global logger
+        logger.debug("process called")
+        logger.debug(line)
         eventJson=json.loads(line)
         if self.checkValidConnection(eventJson):
             parConn = dict()
             try:
+                parConn['proto'] = "tcp"
                 parConn['srcIP'] = ipaddress.ip_address(eventJson['id.orig_h'])
                 parConn['srcPort'] = int(eventJson['id.orig_p'])
                 parConn['dstIP'] = ipaddress.ip_address(eventJson['id.resp_h'])
@@ -77,37 +56,19 @@ class dataProcess():
                 errorString="Invalid Line: " + str(line)
                 logging.info(errorString)
                 pass
-            if self.routableIpV4(parConn['srcIP']) and self.routableIpV4(parConn['dstIP']):
-                connectKey=self.creationConnectionKey(eventJson,parConn)
+            if routableIpV4(parConn['srcIP']) and routableIpV4(parConn['dstIP']):
+                logger.debug("checks passes")
+                connectKey=createConnectionKey(parConn)
                 self.addConnectionRedis(eventJson,connectKey)
 
 if __name__ == "__main__":
-    config = configparser.ConfigParser()
 
-    configFile=os.path.dirname(os.path.realpath(__file__)) + "/conf/net2Host.conf"  
+    configuration=readConfigToDict(os.path.basename(__file__).split(".")[0])
 
-    CONFSTORE=dict()
+    loggerName=configuration['appname'] + " logger"
 
-    CONFSTORE['appname']=os.path.basename(__file__).split(".")[0]
+    setupLogger(loggerName,configuration)
 
-    config.read(configFile)
+    processing=dataProcess(configuration,loggerName)
 
-    logLevel=logging.getLevelName(config['all']['loglevel'])
-
-    for confKey, confValue in config[CONFSTORE['appname']].iteritems():
-        CONFSTORE[confKey]=str(confValue)
-
-    loggerName=CONFSTORE['appname'] + " logger"
-
-    logger=logging.getLogger(loggerName)
-    logger.setLevel(logLevel)
-
-    handlerFile=logging.FileHandler(CONFSTORE['logfile'])
-    handlerFile.setLevel(logLevel)
-
-    logger.addHandler(handlerFile)
-    logger.debug(loggerName + " started logging")
-
-    processing=dataProcess()
-
-    programControl(sys.argv,CONFSTORE,loggerName,processing)
+    programControl(sys.argv,configuration,loggerName,processing)

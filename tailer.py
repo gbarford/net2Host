@@ -90,7 +90,7 @@ def programControl(args,conf,loggerName,p):
     logger.debug(loggerName + " program control begun")
  
     daemon = tailer(CONFSTORE['pidfile'])
-
+    
     if len(args) == 2:
 
         if 'start' == args[1]:

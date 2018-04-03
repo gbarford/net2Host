@@ -33,9 +33,13 @@ class dataProcess():
         return True
 
     def addConnectionRedis(self,event,key):
+        updateExpireTime=False
+        if not self.rd.exists(key):
+            updateExpireTime=True
         for broKey, value in event.iteritems():
             self.rd.hmset(key,{broKey : value})
-        self.rd.expire(key,900)
+        if updateExpireTime:
+            self.rd.expire(key,900)
         return True
 
 

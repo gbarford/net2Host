@@ -47,6 +47,9 @@ class dataProcess():
 
     def addConnectionRedis(self,event,key,conn):
         global logger
+        updateExpireTime=False
+        if not self.rd.exists(key):
+            updateExpireTime=True
         logger.debug("adding hmset")
         self.rd.hmset(key,{'id.orig_h' : str(conn['srcIP'])})
         self.rd.hmset(key,{'id.orig_p' : str(conn['srcPort'])})
@@ -55,7 +58,8 @@ class dataProcess():
         self.rd.hmset(key,{'hostEventTime' : event['EventReceivedTime']})
         self.rd.hmset(key,{'hostApp' : event['Application']})
         self.rd.hmset(key,{'proto' : str(conn['proto'])})
-        self.rd.expire(key,900)
+        if updateExpireTime:
+            self.rd.expire(key,900)
         return True
 
     def process(self,line):

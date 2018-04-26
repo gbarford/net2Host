@@ -1,7 +1,7 @@
 Net2Host
 ========
 
-You will need redis on your host and Bro
+You will need redis on your linux correlation host and bro
 
 Conf directory Files:
 =====================
@@ -20,12 +20,12 @@ nxlog-window-config:
 Processes
 ==========
  bro-ssl-read.py: This read data from bro SSL logs and populates redis database
-                ./bro-ssl-read.py start
+                 - ./bro-ssl-read.py start
 
  host-read.py:  This reads data from file created by NXlog on linux machine and populates Redis data
-                ./host-read.py start
+                 - ./host-read.py start
 
  correlate.py:   This checks redis database and correlates logs. Still a more work to do here.
 
  process-stdin.py:  Use this utility to run daemon process and except input on standard input.  
-                    e.g.: ./process-stdin bro-ssl-read
+                    - e.g.: ./process-stdin bro-ssl-read

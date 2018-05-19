@@ -19,38 +19,22 @@ LogLevel INFO
     Module      xm_syslog
 </Extension>
 
-<Input in1>
-    Module	im_udp
-    Port	514
-    Exec	parse_syslog_bsd();
-</Input>
-
-<Input in2>
+<Input in>
     Module	im_tcp
     Port	1514
     Host    0.0.0.0   
 </Input>
 
-<Output fileout1>
+<Output fileout>
     Module	om_file
-    File	"/var/log/nxlog/logmsg.txt"
-    Exec	if $Message =~ /error/ $SeverityValue = syslog_severity_value("error");
-    Exec	to_syslog_bsd();
-</Output>
-
-<Output fileout2>
-    Module	om_file
-    File	"/var/log/nxlog/logmsg2.txt"
+    File	"/var/log/nxlog/windows.log"
 </Output>
 
 ########################################
 # Routes                               #
 ########################################
-<Route 1>
-    Path	in1 => fileout1
-</Route>
 
 <Route tcproute>
-    Path	in2 => fileout2
+    Path	in => fileout
 </Route>
 

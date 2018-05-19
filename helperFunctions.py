@@ -3,6 +3,8 @@ import ipaddress
 import configparser
 import os
 import logging
+import logging.handlers
+import redis
 
 
 def routableIpV4(ipAddressToCheck):
@@ -52,7 +54,9 @@ def readConfigToDict(appName):
    
     return confDict
 
-
+def initRedis(conf):
+    return redis.Redis(host=conf['all']['redishost'], port=int(conf['all']['redisport']),\
+        db=int(conf['all']['redisdb']))
 
 def setupLogger(loggerName,config):
     logLevel=logging.getLevelName(config['all']['loglevel'])

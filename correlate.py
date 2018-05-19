@@ -7,38 +7,33 @@ import sys
 import ipaddress
 import redis
 import time
+import datetime
 from helperFunctions import *
+from elasticsearch import Elasticsearch, helpers
 
 def errorLog(errorMsg):
     print(errorMsg)
 
-rd = redis.Redis()
+
 
 configuration=readConfigToDict(os.path.basename(__file__).split(".")[0])
 
+rd = initRedis(configuration)
+
+es = Elasticsearch(configuration[u'elasticout'].split(','),
+    sniff_on_start=True,
+    sniff_on_connection_fail=True,
+    sniffer_timeout=60)
 
 with open(configuration[u'jsonoutfile'], 'w') as jsonOut:
-
-  while True:
-    if rd.llen('toProcess') > 0:
-        key=rd.rpop('toProcess')
+    while True:
+        rlist,key=rd.brpop('toProcess',0)
+        print key
         if rd.exists(key):
-            if rd.hexists(key,"hostApp") and rd.hexists(key,"ja3"):
-                app=rd.hget(key,"hostApp")
-                ja3=rd.hget(key,"ja3")
-                json.dump(rd.hgetall(key),jsonOut)
-                jsonOut.write("\n")
-                if rd.exists(app):
-                    if not rd.sismember(app,ja3):
-                        print("New JA3: " + ja3 + " for app: " + app + " src: " + rd.hget(key,"id.orig_h") \
-                          + " dst: " + rd.hget(key,"id.resp_h"))
-                        rd.sadd(app,ja3)
-                else:
-                    print("New App:" + app + " with JA3: " + ja3 + " src: " + rd.hget(key,"id.orig_h") \
-                      + " dst: " + rd.hget(key,"id.resp_h"))
-                    rd.sadd(app,ja3)
-                rd.delete(key)
-            else:
-                rd.lpush('toProcess',key)
-    else:
-        time.sleep(1)
+            logJson=json.dumps(rd.hgetall(key))
+            timestamp=datetime.datetime.strptime(rd.hget(key,'@timestamp'),"%Y-%m-%dT%H:%M:%S.%f")
+            indexName=configuration[u'index'] + "-" + str(timestamp.year) + "-" + str(timestamp.month) + "-" + str(timestamp.day) 
+            es.index(body=logJson, index=indexName, doc_type='correlate')
+            jsonOut.write(logJson)
+            jsonOut.write("\n")
+            rd.delete(key)

@@ -128,5 +128,5 @@ def programControl(args,conf,loggerName,p):
             sys.exit(2)
         sys.exit(0)
     else:
-        print "usage: %s start|stop|restart|status" % args[0]
+        print "usage: %s start|stop|restart|status|stdin <normalisation schema>" % args[0]
         sys.exit(2)

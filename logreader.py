@@ -4,8 +4,8 @@ import json
 import sys
 import redis
 import logging
-import logging.handlers
 import ipaddress
+import importlib
 import os
 import datetime
 from tailer import *
@@ -69,12 +69,22 @@ class dataProcess():
 
 if __name__ == "__main__":
 
-    configuration=readConfigToDict(os.path.basename(__file__).split(".")[0])
+    if len(sys.argv)==3:
+        appname = sys.argv[2]
+        i=importlib.import_module(appname)
 
-    loggerName=configuration['appname'] + " logger"
+        configuration=readConfigToDict(os.path.basename(__file__).split(".")[0])
 
-    setupLogger(loggerName,configuration)
+        loggerName=configuration['appname'] + " logger"
 
-    processing=dataProcess(configuration,loggerName)
+        setupLogger(loggerName,configuration)
 
-    programControl(sys.argv,configuration,loggerName,processing)
+        processing=dataProcess(configuration,loggerName)
+     
+        if sys.argv[1]!='stdin':
+            programControl(sys.argv,configuration,loggerName,processing)
+        else:
+            for l in sys.stdin:
+                processing.process(l)
+    else:
+        print "usage: %s start|stop|restart|status|stdin <normalisation schema>" % args[0]

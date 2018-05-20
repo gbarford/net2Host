@@ -94,11 +94,8 @@ def programControl(args,conf,loggerName,p):
     if len(args) == 3:
 
         if 'start' == args[1]:
-            try:
-                daemon.start()
-            except:
-                logger.info('daemon failed to start')
-                pass
+            daemon.start()
+
 
         elif 'stop' == args[1]:
             print "Stopping ..."

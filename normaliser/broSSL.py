@@ -1,3 +1,5 @@
+import datetime
+
 class normaliser():
     tailfile = '/var/log/bro/current/ssl.log'
     
@@ -17,7 +19,7 @@ class normaliser():
     secondaryFields = {
         'timestamp' : '%--function--%',
         'bro_uid' : 'uid',
-        'version':'version',
+        'version': 'version',
         'cipher' : 'cipher',
         'curve' : 'curve',
         'server_name' : 'server_name',
@@ -28,8 +30,12 @@ class normaliser():
         'issuer' : 'issuer',
         'ja3' : 'ja3',
         'cert_chain_fuids' : 'cert_chain_fuids',
-        'client_cert_chain_fuids' : 'client_cert_chain_fuids', 
+        'client_cert_chain_fuids' : 'client_cert_chain_fuids'
     }
 
-    def timestamp(log):
-        datetime.datetime.fromtimestamp(float(log['ts'])).isoformat()
+    overwriteFields = set(['aproto','nproto'])
+
+    appendingFields = set()
+
+    def timestamp(self,log):
+        return datetime.datetime.fromtimestamp(float(log['ts'])).isoformat()

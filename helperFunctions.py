@@ -7,32 +7,6 @@ import logging.handlers
 import redis
 
 
-def routableIpV4(ipAddressToCheck):
-    if ipAddressToCheck.version != 4:
-        return False
-    if ipAddressToCheck.is_multicast:
-        return False
-    if ipAddressToCheck.is_loopback:
-        return False
-    if str(ipAddressToCheck) == "0.0.0.0":
-        return False
-    if str(ipAddressToCheck) == "255.255.255.255":
-        return False
-    if ipAddressToCheck.is_private:
-        return True
-    if ipAddressToCheck.is_global:
-        return True
-    return False
-
-def createConnectionKey(conn):
-    key = str(conn['nproto']) \
-        + '-' + str(conn['src_ip']) \
-        + ':' + str(conn['src_port']) \
-        + '-' + str(conn['dst_ip']) \
-        + ':' + str(conn['dst_port'])
-    return key
-
-
 def readConfigToDict(execName,appName):
     config = configparser.ConfigParser()
 

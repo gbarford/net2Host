@@ -23,7 +23,7 @@ class normaliser():
         'version': 'version',
         'cipher' : 'cipher',
         'curve' : 'curve',
-        'server_name' : 'server_name',
+        'host_server_name' : 'server_name',
         'resumed' : 'resumed',
         'next_protocol' : 'next_protocol',
         'established' : 'established',

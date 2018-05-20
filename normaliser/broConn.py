@@ -39,7 +39,7 @@ class normaliser():
         return datetime.datetime.fromtimestamp(float(log['ts'])).isoformat()
 
     def finished(self,log):
-        if log['conn_state'] == u'S0' or log['conn_state'] == u'S1':
+        if (log['conn_state'] == u'S0' or log['conn_state'] == u'S1') and log['proto'] == 'tcp':
             return False
         else:
             if log['conn_state'] == u'OTH' or log['proto'] != 'tcp':

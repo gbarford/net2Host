@@ -26,14 +26,36 @@ es = Elasticsearch(configuration[u'elasticout'].split(','),
     sniffer_timeout=60)
 
 with open(configuration[u'jsonoutfile'], 'w') as jsonOut:
+    quickLoopKey=None
+    lastKey=None
+    quickLoopUpdateTime = datetime.datetime.utcnow()
     while True:
         rlist,key=rd.brpop('toProcess',0)
         print key
+        if lastKey == key or quickLoopKey == key:
+            print "sleeping looping quick"
+            time.sleep(5)
+        lastKey = key
         if rd.exists(key):
-            logJson=json.dumps(rd.hgetall(key))
-            timestamp=datetime.datetime.strptime(rd.hget(key,'@timestamp'),"%Y-%m-%dT%H:%M:%S.%f")
-            indexName=configuration[u'index'] + "-" + str(timestamp.year) + "-" + str(timestamp.month) + "-" + str(timestamp.day) 
-            es.index(body=logJson, index=indexName, doc_type='correlate')
-            jsonOut.write(logJson)
-            jsonOut.write("\n")
-            rd.delete(key)
+            logDict=rd.hgetall(key)
+            logJson=json.dumps(logDict)
+            if  'finished' not in logDict or logDict['finished']=='True':
+                lastUpdateTime=datetime.datetime.strptime(logDict['corr_last_touch_time'], "%Y-%m-%dT%H:%M:%S.%f")
+                currentTime=datetime.datetime.utcnow()
+                if currentTime > lastUpdateTime+datetime.timedelta(0,360):
+                    print logJson
+                    timestamp = datetime.datetime.strptime(logDict['@timestamp'], "%Y-%m-%dT%H:%M:%S.%f")
+                    indexName=configuration[u'index'] + "-" + str(timestamp.year) + "-" + str(timestamp.month) + "-" + str(timestamp.day)
+                    es.index(body=logJson, index=indexName, doc_type='correlate')
+                    jsonOut.write(logJson)
+                    jsonOut.write("\n")
+                    rd.delete(key)
+                else:
+
+                    rd.lpush('toProcess', key)
+            else:
+                rd.lpush('toProcess', key)
+            if currentTime > quickLoopUpdateTime+datetime.timedelta(0,1):
+                quickLoopKey = key
+                quickLoopUpdateTime = datetime.datetime.utcnow()
+

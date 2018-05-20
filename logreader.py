@@ -6,6 +6,7 @@ import redis
 import logging
 import ipaddress
 import importlib
+import datetime
 import os
 from tailer import *
 from helperFunctions import *
@@ -137,6 +138,7 @@ class dataProcess():
                         conn[key] = ipaddress.ip_address(eventJson[value])
                     else:
                         conn[key] = eventJson[value]
+                    conn['corr_last_touch_time']=datetime.datetime.utcnow().isoformat()
             except ValueError:
                 errorString="Invalid Line: " + str(line)
                 logging.info(errorString)

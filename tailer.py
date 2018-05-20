@@ -91,7 +91,7 @@ def programControl(args,conf,loggerName,p):
  
     daemon = tailer(CONFSTORE['pidfile'])
     
-    if len(args) == 2:
+    if len(args) == 3:
 
         if 'start' == args[1]:
             try:

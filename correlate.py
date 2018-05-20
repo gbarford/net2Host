@@ -16,7 +16,7 @@ def errorLog(errorMsg):
 
 
 
-configuration=readConfigToDict(os.path.basename(__file__).split(".")[0])
+configuration=readConfigToDict(os.path.basename(__file__).split(".")[0],'-')
 
 rd = initRedis(configuration)
 

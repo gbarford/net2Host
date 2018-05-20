@@ -25,26 +25,29 @@ def routableIpV4(ipAddressToCheck):
     return False
 
 def createConnectionKey(conn):
-    key = str(conn['proto']) \
-        + '-' + str(conn['srcIP']) \
-        + ':' + str(conn['srcPort']) \
-        + '-' + str(conn['dstIP']) \
-        + ':' + str(conn['dstPort'])
+    key = str(conn['nproto']) \
+        + '-' + str(conn['src_ip']) \
+        + ':' + str(conn['src_port']) \
+        + '-' + str(conn['dst_ip']) \
+        + ':' + str(conn['dst_port'])
     return key
 
 
-def readConfigToDict(appName):
+def readConfigToDict(execName,appName):
     config = configparser.ConfigParser()
 
     configFile=os.path.dirname(os.path.realpath(__file__)) + "/conf/net2Host.conf"
 
     confDict=dict()
 
-    confDict['appname']=appName
+    if appName == '-':
+        confDict['appname']=execName
+    else:
+        confDict['appname']=execName + '-' + appName
 
     config.read(configFile)
 
-    for confKey, confValue in config[confDict['appname']].iteritems():
+    for confKey, confValue in config[execName].iteritems():
         confDict[confKey]=str(confValue)
 
     confDict['all']=dict()
@@ -54,9 +57,13 @@ def readConfigToDict(appName):
    
     return confDict
 
+
+
 def initRedis(conf):
     return redis.Redis(host=conf['all']['redishost'], port=int(conf['all']['redisport']),\
         db=int(conf['all']['redisdb']))
+
+
 
 def setupLogger(loggerName,config):
     logLevel=logging.getLevelName(config['all']['loglevel'])

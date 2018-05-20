@@ -23,14 +23,10 @@ class dataProcess():
 
 
     def checkValidConnection(self,event):
-        if 'id.orig_h' not in event:
-            return False
-        if 'id.orig_p' not in event:
-            return False
-        if 'id.resp_h' not in event:
-            return False
-        if 'id.resp_p' not in event:
-            return False
+        norm=normalise.normaliser()
+        for i in norm.corrlationFields.values():
+            if i not in event:
+                return False
         return True
 
     def addConnectionRedis(self,parsed,event,key):
@@ -48,22 +44,23 @@ class dataProcess():
         logger.debug("process called")
         logger.debug(line)
         eventJson=json.loads(line)
+        norm=normalise.normaliser()
         if self.checkValidConnection(eventJson):
-            parConn = dict()
+            conn = norm.initialValues
             try:
-                parConn['nproto'] = "tcp"
-                parConn['src_ip'] = ipaddress.ip_address(eventJson['id.orig_h'])
-                parConn['src_port'] = int(eventJson['id.orig_p'])
-                parConn['dst_ip'] = ipaddress.ip_address(eventJson['id.resp_h'])
-                parConn['dst_port'] = int(eventJson['id.resp_p'])
+                for key, value in norm.corrlationFields.iteritems():
+                    if key=='src_port' or key=='dst_port':
+                        conn[key] = int(eventJson[value])
+                    else:
+                        conn[key] = ipaddress.ip_address(eventJson[value])
             except ValueError:
                 errorString="Invalid Line: " + str(line)
                 logging.info(errorString)
                 pass
-            if routableIpV4(parConn['src_ip']) and routableIpV4(parConn['dst_ip']):
+            if routableIpV4(conn['src_ip']) and routableIpV4(conn['dst_ip']):
                 logger.debug("checks passes")
-                connectKey=createConnectionKey(parConn)
-                self.addConnectionRedis(parConn,eventJson,connectKey)
+                connectKey=createConnectionKey(conn)
+                self.addConnectionRedis(conn,eventJson,connectKey)
                 logger.debug("trying to push into db")
                 self.rd.lpush('toProcess',connectKey)
 
@@ -71,16 +68,24 @@ if __name__ == "__main__":
 
     if len(sys.argv)==3:
         appname = sys.argv[2]
-        i=importlib.import_module(appname)
+        normalise=importlib.import_module('normaliser.' + appname)
 
-        configuration=readConfigToDict(os.path.basename(__file__).split(".")[0])
+        configuration=readConfigToDict(os.path.basename(__file__).split(".")[0],appname)
+
+        norm=normalise.normaliser()
 
         loggerName=configuration['appname'] + " logger"
+
+        configuration['pidfile'] = configuration['pidfile'] + configuration['appname'] + '.pid'
+        configuration['logfile'] = configuration['logfile'] + configuration['appname'] + '.log'
+        configuration['statestore'] = configuration['statestore'] + configuration['appname'] + '.state'
+        configuration['tailfile'] = norm.tailfile
 
         setupLogger(loggerName,configuration)
 
         processing=dataProcess(configuration,loggerName)
-     
+
+        logging.debug(pprint.pprint(configuration))
         if sys.argv[1]!='stdin':
             programControl(sys.argv,configuration,loggerName,processing)
         else:

@@ -46,6 +46,9 @@ with open(configuration[u'jsonoutfile'], 'w') as jsonOut:
             print "sleeping looping quick"
             time.sleep(5)
         lastKey = key
+        if currentTime > quickLoopUpdateTime + datetime.timedelta(0, 1):
+            quickLoopKey = key
+            quickLoopUpdateTime = datetime.datetime.utcnow()
         if rd.exists(key):
             logDict=rd.hgetall(key)
 
@@ -67,7 +70,5 @@ with open(configuration[u'jsonoutfile'], 'w') as jsonOut:
                     rd.lpush('toProcess', key)
             else:
                 rd.lpush('toProcess', key)
-            if currentTime > quickLoopUpdateTime+datetime.timedelta(0,1):
-                quickLoopKey = key
-                quickLoopUpdateTime = datetime.datetime.utcnow()
+
 

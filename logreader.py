@@ -60,6 +60,8 @@ class dataProcess():
             tmpVal=u'['
             firstLoop=True
             for i in rVal:
+                if type(i) != type(unicode()):
+                    i = unicode(i)
                 if firstLoop==True:
                     tmpVal=tmpVal+i
                     firstLoop=False
@@ -132,12 +134,15 @@ class dataProcess():
             conn = norm.initialValues
             try:
                 for key, value in norm.corrlationFields.iteritems():
-                    if key=='src_port' or key=='dst_port':
-                        conn[key] = int(eventJson[value])
-                    elif key=='src_ip' or key=='dst_ip':
-                        conn[key] = ipaddress.ip_address(eventJson[value])
+                    if value == '%--function--%':
+                        conn[key]=eval('norm.' + key + '(eventJson)')
                     else:
-                        conn[key] = eventJson[value]
+                        if key=='src_port' or key=='dst_port':
+                            conn[key] = int(eventJson[value])
+                        elif key=='src_ip' or key=='dst_ip':
+                            conn[key] = ipaddress.ip_address(eventJson[value])
+                        else:
+                            conn[key] = eventJson[value]
                     conn['corr_last_touch_time']=datetime.datetime.utcnow().isoformat()
             except ValueError:
                 errorString="Invalid Line: " + str(line)

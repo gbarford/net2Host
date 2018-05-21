@@ -25,6 +25,16 @@ es = Elasticsearch(configuration[u'elasticout'].split(','),
     sniff_on_connection_fail=True,
     sniffer_timeout=60)
 
+def fixListInJson(logMsg):
+    tempDict=dict()
+    for key,value in logMsg.iteritems():
+        if value[0] == "[" and value[-1] == "]" and "," in value:
+            tempDict[key] = value[1:-1].split(",")
+        else:
+            tempDict[key] = value
+    return(tempDict)
+
+
 with open(configuration[u'jsonoutfile'], 'w') as jsonOut:
     quickLoopKey=None
     lastKey=None
@@ -38,11 +48,13 @@ with open(configuration[u'jsonoutfile'], 'w') as jsonOut:
         lastKey = key
         if rd.exists(key):
             logDict=rd.hgetall(key)
-            logJson=json.dumps(logDict)
+
             if  'finished' not in logDict or logDict['finished']=='True':
                 lastUpdateTime=datetime.datetime.strptime(logDict['corr_last_touch_time'], "%Y-%m-%dT%H:%M:%S.%f")
                 currentTime=datetime.datetime.utcnow()
                 if currentTime > lastUpdateTime+datetime.timedelta(0,360):
+                    logDict = fixListInJson(logDict)
+                    logJson = json.dumps(logDict)
                     print logJson
                     timestamp = datetime.datetime.strptime(logDict['@timestamp'], "%Y-%m-%dT%H:%M:%S.%f")
                     indexName=configuration[u'index'] + "-" + str(timestamp.year) + "-" + str(timestamp.month) + "-" + str(timestamp.day)

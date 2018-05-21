@@ -3,6 +3,7 @@ from daemon import Daemon
 import json
 import pprint
 import sys
+import traceback
 import os.path
 import time    
 import logging
@@ -94,7 +95,14 @@ def programControl(args,conf,loggerName,p):
     if len(args) == 3:
 
         if 'start' == args[1]:
-            daemon.start()
+            try:
+                daemon.start()
+            except SystemExit:
+                pass
+            except:
+                logger.error(sys.exc_info())
+                logger.error(traceback.format_exc())
+                pass
 
 
         elif 'stop' == args[1]:

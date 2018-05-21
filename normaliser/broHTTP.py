@@ -12,7 +12,7 @@ class normaliser():
 
 
     initialValues = {
-        'type_broDNS' : 'True',
+        'type_broHTTP' : 'True',
         'nproto' : 'tcp',
         'aproto' : 'http'
     }

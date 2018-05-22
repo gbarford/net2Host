@@ -48,11 +48,18 @@ class dataProcess():
 
     def checkValidConnection(self,event):
         norm=normalise.normaliser()
-        for i in norm.corrlationFields.values():
-            if i not in event:
-                logger.debug("Invalid event this isn't in event")
-                logger.debug(i)
-                return False
+        for key,value in norm.corrlationFields.iteritems():
+            if value not in event:
+                if value == '%--function--%':
+                    try:
+                        y=eval('norm.' + key + '(event)')
+                    except ValueError:
+                        logger.debug("Invalid connection parsing function result " + key)
+                        return False
+                else:
+                    logger.debug("Invalid event this isn't in event")
+                    logger.debug(i)
+                    return False
         return True
 
     def serialListRedis(self,rKey,hKey,rVal):

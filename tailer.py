@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 from daemon import Daemon
 import json
 import pprint
@@ -7,6 +6,7 @@ import traceback
 import os.path
 import time    
 import logging
+import pickle
 
 CONFSTORE = None
 
@@ -35,7 +35,7 @@ class tailer(Daemon):
         self.fh.close()
         logger.debug(pprint.pprint(tempPosInfo))
         with open(self.savePos, 'w') as outfile:
-            json.dump(tempPosInfo, outfile)
+            pickle.dump(tempPosInfo, outfile)
         self.daemon_alive = False
         sys.exit()
 
@@ -52,7 +52,7 @@ class tailer(Daemon):
         posInfo=None
 
         if os.path.isfile(self.savePos):
-            posInfo=json.load(open(self.savePos))
+            posInfo=pickle.load(open(self.savePos))
 
 
         while True:
@@ -91,47 +91,44 @@ def programControl(args,conf,loggerName,p):
     logger.debug(loggerName + " program control begun")
  
     daemon = tailer(CONFSTORE['pidfile'])
-    
-    if len(args) == 3:
 
-        if 'start' == args[1]:
-            try:
-                daemon.start()
-            except SystemExit:
-                pass
-            except:
-                logger.error(sys.exc_info())
-                logger.error(traceback.format_exc())
-                pass
+    if 'start' == args[2]:
+        try:
+            daemon.start()
+        except SystemExit:
+            pass
+        except:
+            logger.error(sys.exc_info())
+            logger.error(traceback.format_exc())
+            pass
 
 
-        elif 'stop' == args[1]:
-            print "Stopping ..."
-            daemon.stop()
+    elif 'stop' == args[2]:
+        print("Stopping ...")
+        daemon.stop()
 
-        elif 'restart' == args[1]:
-            print "Restaring ..."
-            daemon.restart()
+    elif 'restart' == args[2]:
+        print("Restaring ...")
+        daemon.restart()
 
-        elif 'status' == args[1]:
-            try:
-                pf = file(CONFSTORE['pidfile'],'r')
-                pid = int(pf.read().strip())
-                pf.close()
-            except IOError:
-                pid = None
-            except SystemExit:
-                pid = None
+    elif 'status' == args[2]:
+        try:
+            pf = file(CONFSTORE['pidfile'],'r')
+            pid = int(pf.read().strip())
+            pf.close()
+        except IOError:
+            pid = None
+        except SystemExit:
+            pid = None
 
-            if pid:
-                print '%s is running as pid %s' % (CONFSTORE['appname'], pid)
-            else:
-                print '%s is not running.' % CONFSTORE['appname']
-
+        if pid:
+            print('%s is running as pid %s' % (CONFSTORE['appname'], pid))
         else:
-            print "Unknown command"
-            sys.exit(2)
-        sys.exit(0)
+            print('%s is not running.' % CONFSTORE['appname'])
+
     else:
-        print "usage: %s start|stop|restart|status|stdin <normalisation schema>" % args[0]
+        print("Unknown command")
         sys.exit(2)
+
+    sys.exit(0)
+

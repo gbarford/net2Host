@@ -1,6 +1,7 @@
 import datetime
 
 class normaliser():
+    logLevel = "INFO"
     tailfile = '/var/log/bro/current/conn.log'
     
     corrlationFields = {

@@ -1,6 +1,7 @@
 import datetime
 
 class normaliser():
+    logLevel = "INFO"
     tailfile = '/var/log/nxlog/windows.log'
     
     corrlationFields = {
@@ -33,8 +34,8 @@ class normaliser():
         protoDict = {
             "1" : "icmp",
             "2" : "igmp",
-
-
+            "6" : "tcp",
+            "17" : "udp",
             "47" : "gre",
             "51" : "ah"
         }

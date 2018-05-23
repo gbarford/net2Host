@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-from __future__ import unicode_literals
+#!/usr/bin/env python3
 import json
 import sys
 import redis
@@ -8,6 +7,7 @@ import ipaddress
 import importlib
 import datetime
 import os
+import traceback
 from tailer import *
 from helperFunctions import *
 
@@ -46,29 +46,14 @@ class dataProcess():
               + ':' + str(c['dst_port'])
         return key
 
-    def checkValidConnection(self,event):
-        norm=normalise.normaliser()
-        for key,value in norm.corrlationFields.iteritems():
-            if value not in event:
-                if value == '%--function--%':
-                    try:
-                        y=eval('norm.' + key + '(event)')
-                    except ValueError:
-                        logger.debug("Invalid connection parsing function result " + key)
-                        return False
-                else:
-                    logger.debug("Invalid event this isn't in event")
-                    logger.debug(i)
-                    return False
-        return True
 
     def serialListRedis(self,rKey,hKey,rVal):
         if type(rVal) == type(list()):
             tmpVal=u'['
             firstLoop=True
             for i in rVal:
-                if type(i) != type(unicode()):
-                    i = unicode(i)
+                if type(i) != type(str()):
+                    i = str(i)
                 if firstLoop==True:
                     tmpVal=tmpVal+i
                     firstLoop=False
@@ -79,16 +64,16 @@ class dataProcess():
         else:
             self.rd.hset(rKey,hKey,rVal)
 
-    def addKeyRedis(self,rKy,ky,vl):
+    def appendReplaceOverwrite(self,rKy,ky,vl):
         global logger
         norm = normalise.normaliser()
         logger.debug("redisKey:" + rKy + " key:" + ky + " value:" + str(vl))
         if self.rd.hexists(rKy,ky):
-            if ky in norm.overwriteFields:
+            if ky in norm.overwriteFields or ky == 'corr_last_touch_time':
                 self.serialListRedis(rKy, ky, vl)
                 logger.debug("key overwritten")
             elif ky in norm.appendingFields:
-                tempVal=unicode(self.rd.hget(rKy,ky))
+                tempVal=str(self.rd.hget(rKy,ky),'utf-8')
                 logger.debug("Original key:")
                 logger.debug(tempVal)
                 if tempVal[0] == "[" and tempVal[-1] == "]" and "," in tempVal:
@@ -112,12 +97,12 @@ class dataProcess():
             logger.debug("key does not exist added to redis")
 
 
-    def addConnection(self,normConn,event):
+    def addConnectionRedis(self,normConn,event):
         norm=normalise.normaliser()
         redisKey=self.createConnectionKey(normConn)
-        for key, redisValue in normConn.iteritems():
-            self.addKeyRedis(redisKey, key, redisValue)
-        for key, value in norm.secondaryFields.iteritems():
+        for key, redisValue in normConn.items():
+            self.appendReplaceOverwrite(redisKey, key, redisValue)
+        for key, value in norm.secondaryFields.items():
             redisValue = None
             if value == '%--function--%':
                 redisValue=eval('norm.' + key + '(event)')
@@ -127,7 +112,7 @@ class dataProcess():
             if key == 'timestamp':
                 key = '@timestamp'
             if redisValue is not None:
-                self.addKeyRedis(redisKey, key, redisValue)
+                self.appendReplaceOverwrite(redisKey, key, redisValue)
         return redisKey
 
 
@@ -137,56 +122,70 @@ class dataProcess():
         logger.debug(line)
         eventJson=json.loads(line)
         norm=normalise.normaliser()
-        if self.checkValidConnection(eventJson):
-            conn = norm.initialValues
-            try:
-                for key, value in norm.corrlationFields.iteritems():
-                    if value == '%--function--%':
-                        conn[key]=eval('norm.' + key + '(eventJson)')
+
+        conn = norm.initialValues
+        try:
+            for key, value in norm.corrlationFields.items():
+                if value == '%--function--%':
+                    conn[key]=eval('norm.' + key + '(eventJson)')
+                else:
+                    if key=='src_port' or key=='dst_port':
+                        conn[key] = int(eventJson[value])
+                    elif key=='src_ip' or key=='dst_ip':
+                        conn[key] = ipaddress.ip_address(eventJson[value])
                     else:
-                        if key=='src_port' or key=='dst_port':
-                            conn[key] = int(eventJson[value])
-                        elif key=='src_ip' or key=='dst_ip':
-                            conn[key] = ipaddress.ip_address(eventJson[value])
-                        else:
-                            conn[key] = eventJson[value]
-                    conn['corr_last_touch_time']=datetime.datetime.utcnow().isoformat()
-            except ValueError:
-                errorString="Invalid Line: " + str(line)
-                logging.info(errorString)
-                pass
+                        conn[key] = eventJson[value]
+            conn['corr_last_touch_time']=datetime.datetime.utcnow().isoformat()
+
             if self.routableIpV4(conn['src_ip']) and self.routableIpV4(conn['dst_ip']):
                 logger.debug("checks passes")
-                connectKey=self.addConnection(conn,eventJson)
+                connectKey=self.addConnectionRedis(conn,eventJson)
                 logger.debug("trying to push into processing list on db")
                 self.rd.lpush('toProcess',connectKey)
 
+        except (ValueError, KeyError):
+            errorString="Invalid Line: " + str(line)
+            logging.info(errorString)
+            logging.error(sys.exc_info())
+            logging.error(traceback.format_exc())
+            pass
+
+
+
 if __name__ == "__main__":
 
-    if len(sys.argv)==3:
-        appname = sys.argv[2]
+    if len(sys.argv)>2:
+        appname = sys.argv[1]
+
         normalise=importlib.import_module('normaliser.' + appname)
-
-        configuration=readConfigToDict(os.path.basename(__file__).split(".")[0],appname)
-
         norm=normalise.normaliser()
 
-        loggerName=configuration['appname'] + " logger"
+        execName=os.path.basename(__file__).split(".")[0]
 
-        configuration['pidfile'] = configuration['pidfile'] + configuration['appname'] + '.pid'
-        configuration['logfile'] = configuration['logfile'] + configuration['appname'] + '.log'
-        configuration['statestore'] = configuration['statestore'] + configuration['appname'] + '.state'
-        configuration['tailfile'] = norm.tailfile
+        configuration=readConfigToDict()
 
-        setupLogger(loggerName,configuration)
+
+        loggerName=execName + '-' + appname + " logger"
+        logFileName=configuration['logreader']['logfile'] + execName + '-' + appname + '.log'
+        setupLogger(loggerName,logFileName,norm.logLevel)
 
         processing=dataProcess(configuration,loggerName)
 
-        logging.debug(configuration)
-        if sys.argv[1]!='stdin':
-            programControl(sys.argv,configuration,loggerName,processing)
-        else:
+
+        if len(sys.argv)==4:
+            tailerConfig=dict()
+            tailerConfig['pidfile'] = configuration['logreader']['pidfile'] + execName + '-' + appname + '.pid'
+            tailerConfig['statestore'] = configuration['logreader']['statestore'] + execName + '-' + appname + '.state'
+            tailerConfig['tailfile'] = sys.argv[3]
+            tailerConfig['appname'] = execName + '-' + appname
+
+            logging.debug(tailerConfig)
+            programControl(sys.argv,tailerConfig,loggerName,processing)
+        elif len(sys.argv)==2:
             for l in sys.stdin:
                 processing.process(l)
+        else:
+            print("Invalid number of args")
+            print("usage: %s <normalisation schema> [start|stop|restart|status] [logfile]" % sys.argv[0])
     else:
-        print "usage: %s start|stop|restart|status|stdin <normalisation schema>" % args[0]
+        print("usage: %s <normalisation schema> [start|stop|restart|status] [logfile]" % sys.argv[0])

@@ -1,35 +1,20 @@
 from __future__ import unicode_literals
-import ipaddress
 import configparser
 import os
 import logging
 import logging.handlers
 import redis
+import datetime
 
 
-def readConfigToDict(execName,appName):
+def readConfigToDict():
     config = configparser.ConfigParser()
 
     configFile=os.path.dirname(os.path.realpath(__file__)) + "/conf/net2Host.conf"
 
-    confDict=dict()
-
-    if appName == '-':
-        confDict['appname']=execName
-    else:
-        confDict['appname']=execName + '-' + appName
-
     config.read(configFile)
-
-    for confKey, confValue in config[execName].iteritems():
-        confDict[confKey]=str(confValue)
-
-    confDict['all']=dict()
-    
-    for confKey, confValue in config['all'].iteritems():
-        confDict['all'][confKey]=str(confValue)
    
-    return confDict
+    return config
 
 
 
@@ -38,14 +23,19 @@ def initRedis(conf):
         db=int(conf['all']['redisdb']))
 
 
+def isoTimeRead(timeString):
+    try:
+        return datetime.datetime.strptime(timeString, "%Y-%m-%dT%H:%M:%S.%f")
+    except ValueError:
+        return datetime.datetime.strptime(timeString, "%Y-%m-%dT%H:%M:%S")
 
-def setupLogger(loggerName,config):
-    logLevel=logging.getLevelName(config['all']['loglevel'])
+def setupLogger(loggerName,fileName,logLevel):
+    logLevel=logging.getLevelName(logLevel)
 
     logger=logging.getLogger(loggerName)
     logger.setLevel(logLevel)
 
-    handlerFile=logging.FileHandler(config['logfile'])
+    handlerFile=logging.FileHandler(fileName)
     handlerFile.setLevel(logLevel)
 
     logger.addHandler(handlerFile)

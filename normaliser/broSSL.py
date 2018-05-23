@@ -1,6 +1,7 @@
 import datetime
 
 class normaliser():
+    logLevel = "INFO"
     tailfile = '/var/log/bro/current/ssl.log'
     
     corrlationFields = {

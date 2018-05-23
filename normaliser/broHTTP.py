@@ -1,6 +1,7 @@
 import datetime
 
 class normaliser():
+    logLevel = "INFO"
     tailfile = '/var/log/bro/current/http.log'
     
     corrlationFields = {
@@ -14,7 +15,8 @@ class normaliser():
     initialValues = {
         'type_broHTTP' : 'True',
         'nproto' : 'tcp',
-        'aproto' : 'http'
+        'aproto' : 'http',
+        'finished': False
     }
 
     secondaryFields = {

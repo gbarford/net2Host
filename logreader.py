@@ -176,7 +176,7 @@ if __name__ == "__main__":
         if len(sys.argv)==4 or len(sys.argv)==3:
             tailerConfig = dict()
             if len(sys.argv)==3:
-                if 'tailfile' in norm:
+                if hasattr(norm,'tailfile'):
                     tailerConfig['tailfile'] = norm.tailfile
                 else:
                     print("3 args and tailfile not specified in normaliser config")

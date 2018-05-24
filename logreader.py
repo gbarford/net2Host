@@ -49,7 +49,7 @@ class dataProcess():
 
     def serialListRedis(self,rKey,hKey,rVal):
         if type(rVal) == type(list()):
-            tmpVal=u'['
+            tmpVal='['
             firstLoop=True
             for i in rVal:
                 if type(i) != type(str()):
@@ -58,8 +58,8 @@ class dataProcess():
                     tmpVal=tmpVal+i
                     firstLoop=False
                 else:
-                    tmpVal=tmpVal+u','+i
-            tmpVal=tmpVal+u']'
+                    tmpVal=tmpVal+','+i
+            tmpVal=tmpVal+']'
             self.rd.hset(rKey, hKey, tmpVal)
         else:
             self.rd.hset(rKey,hKey,rVal)
@@ -156,6 +156,7 @@ class dataProcess():
 if __name__ == "__main__":
 
     if len(sys.argv)>2:
+        global logger
         appname = sys.argv[1]
 
         normalise=importlib.import_module('normaliser.' + appname)
@@ -168,7 +169,7 @@ if __name__ == "__main__":
 
         loggerName=execName + '-' + appname + " logger"
         logFileName=configuration['logreader']['logfile'] + execName + '-' + appname + '.log'
-        setupLogger(loggerName,logFileName,norm.logLevel)
+        logger=setupLogger(loggerName,logFileName,norm.logLevel)
 
         processing=dataProcess(configuration,loggerName)
 
@@ -187,7 +188,7 @@ if __name__ == "__main__":
             tailerConfig['statestore'] = configuration['logreader']['statestore'] + execName + '-' + appname + '.state'
             tailerConfig['appname'] = execName + '-' + appname
 
-            logging.debug(tailerConfig)
+            logger.debug(tailerConfig)
             programControl(sys.argv,tailerConfig,loggerName,processing)
         elif len(sys.argv)==2:
             for l in sys.stdin:

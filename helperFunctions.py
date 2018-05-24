@@ -40,4 +40,5 @@ def setupLogger(loggerName,fileName,logLevel):
 
     logger.addHandler(handlerFile)
     logger.debug(loggerName + " started logging")
+    return(logger)
 

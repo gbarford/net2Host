@@ -33,9 +33,8 @@ class tailer(Daemon):
         self.fh.seek(0,0)
         tempPosInfo['firstLine']=self.fh.readline()
         self.fh.close()
-        logger.debug(pprint.pprint(tempPosInfo))
-        with open(self.savePos, 'w') as outfile:
-            pickle.dump(tempPosInfo, outfile)
+        logger.debug(tempPosInfo)
+        pickle.dump(tempPosInfo, open( self.savePos, "wb" ))
         self.daemon_alive = False
         sys.exit()
 
@@ -52,7 +51,7 @@ class tailer(Daemon):
         posInfo=None
 
         if os.path.isfile(self.savePos):
-            posInfo=pickle.load(open(self.savePos))
+            posInfo=pickle.load(open(self.savePos, "rb"))
 
 
         while True:

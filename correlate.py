@@ -15,9 +15,9 @@ def errorLog(errorMsg):
 
 
 
-configuration=readConfigToDict(os.path.basename(__file__).split(".")[0],'-')
+configuration=readConfigToDict()
 
-rd = initRedis(configuration['all'])
+rd = initRedis(configuration)
 
 if 'elasticout' in configuration['correlate']:
     es = Elasticsearch(configuration['correlate']['elasticout'].split(','),
@@ -58,7 +58,6 @@ quickLoopUpdateTime = datetime.datetime.utcnow()
 try:
     while True:
         rlist, key = rd.brpop('toProcess', 0)
-        print(key)
         if lastKey == key or quickLoopKey == key:
             print("sleeping looping quick")
             time.sleep(5)
@@ -69,7 +68,6 @@ try:
             quickLoopUpdateTime = datetime.datetime.utcnow()
         if rd.exists(key):
             logDict = rd.hgetall(key)
-            pprint.pprint(logDict)
             if 'finished' not in logDict or logDict['finished'] == 'True':
                 lastUpdateTime = isoTimeRead(str(logDict[b'corr_last_touch_time'],'utf-8'))
                 if currentTime > lastUpdateTime + datetime.timedelta(0, 360):
@@ -83,8 +81,6 @@ try:
                 rd.lrem('toProcess', key)
                 rd.lpush('toProcess', key)
 except:
-    print (sys.exc_info())
-    logger.error(traceback.format_exc())
+    print(sys.exc_info())
+    print(traceback.format_exc())
     pass
-
-

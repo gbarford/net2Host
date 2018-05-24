@@ -22,8 +22,17 @@ class normaliser():
         'bro_uid' : 'uid',
         'dns_qry' : 'query',
         'dns_code' : 'rcode',
+        'dns_code_name' : 'rcode_name',
+        'dns_qry_type' : 'qtype',
+        'dns_qry_type_name' : 'qtype_name',
         'dns_class' : 'qclass',
-        'dns_response' : 'answers'
+        'dns_class_name' : 'qclass_name',
+        'dns_response' : 'answers',
+        'dns_auth_answ' : 'AA',
+        'dns_mesg_trunc' : 'TC',
+        'dns_rec_desir' : 'RD',
+        'dns_rec_avail' : 'RA',
+        'dns_TTLs' : 'TTLs'
     }
 
     overwriteFields = set()

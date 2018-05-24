@@ -83,7 +83,7 @@ try:
                 rd.lrem('toProcess', key)
                 rd.lpush('toProcess', key)
 except:
-    logger.error(sys.exc_info())
+    print (sys.exc_info())
     logger.error(traceback.format_exc())
     pass
 

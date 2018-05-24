@@ -82,8 +82,8 @@ class dataProcess():
                     logger.debug(tempVal)
                 else:
                     tempVal=[tempVal]
-                if vl not in tempVal:
-                    tempVal.append(vl)
+                if str(vl) not in tempVal:
+                    tempVal.append(str(vl))
                     self.serialListRedis(rKy, ky, tempVal)
                     logger.debug("append to key:")
                     logger.debug(tempVal)
@@ -135,6 +135,7 @@ class dataProcess():
                         conn[key] = ipaddress.ip_address(eventJson[value])
                     else:
                         conn[key] = eventJson[value]
+
             conn['corr_last_touch_time']=datetime.datetime.utcnow().isoformat()
 
             if self.routableIpV4(conn['src_ip']) and self.routableIpV4(conn['dst_ip']):
@@ -172,11 +173,18 @@ if __name__ == "__main__":
         processing=dataProcess(configuration,loggerName)
 
 
-        if len(sys.argv)==4:
-            tailerConfig=dict()
+        if len(sys.argv)==4 or len(sys.argv)==3:
+            tailerConfig = dict()
+            if len(sys.argv)==3:
+                if 'tailfile' in norm:
+                    tailerConfig['tailfile'] = norm.tailfile
+                else:
+                    print("3 args and tailfile not specified in normaliser config")
+            else:
+                tailerConfig['tailfile'] = sys.argv[3]
+
             tailerConfig['pidfile'] = configuration['logreader']['pidfile'] + execName + '-' + appname + '.pid'
             tailerConfig['statestore'] = configuration['logreader']['statestore'] + execName + '-' + appname + '.state'
-            tailerConfig['tailfile'] = sys.argv[3]
             tailerConfig['appname'] = execName + '-' + appname
 
             logging.debug(tailerConfig)
@@ -187,5 +195,7 @@ if __name__ == "__main__":
         else:
             print("Invalid number of args")
             print("usage: %s <normalisation schema> [start|stop|restart|status] [logfile]" % sys.argv[0])
+            exit(2)
     else:
         print("usage: %s <normalisation schema> [start|stop|restart|status] [logfile]" % sys.argv[0])
+        exit(2)

@@ -7,6 +7,7 @@ import ipaddress
 import redis
 import time
 import datetime
+import traceback
 from helperFunctions import *
 from elasticsearch import Elasticsearch, helpers
 

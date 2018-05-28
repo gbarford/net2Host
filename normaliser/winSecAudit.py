@@ -37,7 +37,8 @@ class normaliser():
             "6" : "tcp",
             "17" : "udp",
             "47" : "gre",
-            "51" : "ah"
+            "51" : "ah",
+            "58" : "icmp"
         }
         if log['Protocol'] in protoDict:
             return protoDict[log['Protocol']]

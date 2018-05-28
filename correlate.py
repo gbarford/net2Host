@@ -19,16 +19,16 @@ class correlateProcessing():
     def __init__(self):
         self.configuration=readConfigToDict()
 
-        self.rd = initRedis(configuration)
+        self.rd = initRedis(self.configuration)
 
-        if 'elasticout' in configuration['correlate']:
-            self.es = Elasticsearch(configuration['correlate']['elasticout'].split(','),
+        if 'elasticout' in self.configuration['correlate']:
+            self.es = Elasticsearch(self.configuration['correlate']['elasticout'].split(','),
                 sniff_on_start=True,
                 sniff_on_connection_fail=True,
                 sniffer_timeout=60)
 
-        if 'jsonoutfile' in configuration['correlate']:
-            self.jsonOut=open(configuration['correlate']['jsonoutfile'], 'w')
+        if 'jsonoutfile' in self.configuration['correlate']:
+            self.jsonOut=open(self.configuration['correlate']['jsonoutfile'], 'w')
 
     def fixListInJson(self,logMsg):
         tempDict=dict()

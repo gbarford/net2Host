@@ -164,17 +164,17 @@ class dataProcess():
                 if 'finished' in conn:
                     if conn['finished']==True:
                         logger.debug("trying to push into Finished list on db")
-                        self.rd.lpush('toProcessFinished', pickle.dumps((connectKey, lastTouchTimeSec + self.configuration['correlateTime']['finished'])))
+                        self.rd.lpush('toProcessFinished', pickle.dumps((connectKey, lastTouchTimeSec + int(self.configuration['correlateTime']['finished']))))
 
                     elif conn['finished']==False:
                         logger.debug("trying to push into toProcessNotFinished list on db")
-                        self.rd.lpush('toProcessNotFinished', pickle.dumps((connectKey, lastTouchTimeSec + self.configuration['correlateTime']['default'])))
+                        self.rd.lpush('toProcessNotFinished', pickle.dumps((connectKey, lastTouchTimeSec + int(self.configuration['correlateTime']['default']))))
                     else:
                         logger.debug("Finished None trying to push into toProcessStateless list on db")
-                        self.rd.lpush('toProcessStateless', pickle.dumps((connectKey, lastTouchTimeSec + self.configuration['correlateTime']['default'])))
+                        self.rd.lpush('toProcessStateless', pickle.dumps((connectKey, lastTouchTimeSec + int(self.configuration['correlateTime']['default']))))
                 else:
                     logger.debug("trying to push into toProcessStateless list on db")
-                    self.rd.lpush('toProcessStateless',pickle.dumps((connectKey,lastTouchTimeSec + self.configuration['correlateTime']['default'])))
+                    self.rd.lpush('toProcessStateless',pickle.dumps((connectKey,lastTouchTimeSec + int(self.configuration['correlateTime']['default']))))
             logger.debug("--------------------------------------------------------\n\n\n")
 
         except (ValueError, KeyError):

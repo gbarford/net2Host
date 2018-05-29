@@ -77,12 +77,12 @@ class correlateProcessing():
 
     def checkNotFinishedLastToRecent(self,rdKey):
         lastUpdateTime = isoTimeRead(str(self.rd.hget(rdKey,[b'corr_last_touch_time']), 'utf-8'))
-        return datetime.datetime.utcnow() < lastUpdateTime + datetime.timedelta(0, self.configuration['correlateTime']['unfinished'])
+        return datetime.datetime.utcnow() < lastUpdateTime + datetime.timedelta(0, int(self.configuration['correlateTime']['unfinished']))
 
     def addToNotFinished(self,rdKey):
         lastTouchTime = datetime.datetime.utcnow()
         lastTouchTimeSec = int(lastTouchTime.strftime('%s'))
-        self.rd.lpush('toProcessNotFinishedRetain', pickle.dumps((rdKey, lastTouchTimeSec + self.configuration['correlateTime']['unfinished'])))
+        self.rd.lpush('toProcessNotFinishedRetain', pickle.dumps((rdKey, lastTouchTimeSec + int(self.configuration['correlateTime']['unfinished']))))
 
 
 

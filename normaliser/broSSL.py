@@ -14,8 +14,7 @@ class normaliser():
     initialValues = {
         'nproto' : 'tcp',
         'aproto' : 'ssl',
-        'type_broSSL' : 'True',
-        'finished' : False
+        'type_broSSL' : 'True'
     }
 
     secondaryFields = {

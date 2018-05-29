@@ -19,6 +19,7 @@ class normaliser():
 
     secondaryFields = {
         'timestamp' : '%--function--%',
+        'finished': '%--function--%',
         'bro_uid' : 'uid',
         'dns_qry' : 'query',
         'dns_code' : 'rcode',
@@ -41,4 +42,10 @@ class normaliser():
 
     def timestamp(self,log):
         return datetime.datetime.fromtimestamp(float(log['ts'])).isoformat()
+
+    def finished(self,log):
+        if log['proto'] == 'udp':
+            return True
+        else:
+            return None
 

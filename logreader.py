@@ -114,8 +114,13 @@ class dataProcess():
             if key == 'timestamp':
                 key = '@timestamp'
             if redisValue is not None:
+                logger.debug("Field written")
+                logger.debug(redisKey)
+                logger.debug(key)
+                logger.debug(redisValue)
+                logger.debug(type(redisValue))
                 self.appendReplaceOverwrite(redisKey, key, redisValue)
-            if key == 'finished':
+            if key == 'finished' and redisValue is not None:
                 normConn['finished']=redisValue
         return redisKey
 
@@ -127,10 +132,13 @@ class dataProcess():
 
         norm=normalise.normaliser()
 
-        conn = norm.initialValues
+        conn = norm.initialValues.copy()
         try:
             eventJson = json.loads(line)
+            logger.debug(conn)
+            logger.debug("Corrlation Fields ---")
             for key, value in norm.corrlationFields.items():
+                logger.debug(key)
                 if value == '%--function--%':
                     conn[key]=eval('norm.' + key + '(eventJson)')
                 else:
@@ -140,11 +148,14 @@ class dataProcess():
                         conn[key] = ipaddress.ip_address(eventJson[value])
                     else:
                         conn[key] = eventJson[value]
+            logger.debug(conn)
             lastTouchTime=datetime.datetime.utcnow()
             conn['corr_last_touch_time']=lastTouchTime.isoformat()
 
+
             if self.routableIpV4(conn['src_ip']) and self.routableIpV4(conn['dst_ip']):
                 logger.debug("checks passes")
+                logger.debug(conn)
                 connectKey=self.addConnectionRedis(conn,eventJson)
                 lastTouchTimeSec=int(lastTouchTime.strftime('%s'))
                 if 'finished' in conn:
@@ -152,12 +163,16 @@ class dataProcess():
                         logger.debug("trying to push into Finished list on db")
                         self.rd.lpush('toProcessFinished', pickle.dumps((connectKey, lastTouchTimeSec + 60)))
 
-                    else:
+                    elif conn['finished']==False:
                         logger.debug("trying to push into toProcessNotFinished list on db")
                         self.rd.lpush('toProcessNotFinished', pickle.dumps((connectKey, lastTouchTimeSec + 3600)))
+                    else:
+                        logger.debug("Finished None trying to push into toProcessStateless list on db")
+                        self.rd.lpush('toProcessStateless', pickle.dumps((connectKey, lastTouchTimeSec + 360)))
                 else:
                     logger.debug("trying to push into toProcessStateless list on db")
                     self.rd.lpush('toProcessStateless',pickle.dumps((connectKey,lastTouchTimeSec + 360)))
+            logger.debug("--------------------------------------------------------\n\n\n")
 
         except (ValueError, KeyError):
             logging.error("Invalid Line")

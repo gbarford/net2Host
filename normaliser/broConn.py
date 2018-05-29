@@ -32,7 +32,7 @@ class normaliser():
         'dst_packets' : 'resp_pkts'
     }
 
-    overwriteFields = set(['@timestamp','aproto','nproto','finished'])
+    overwriteFields = set(['@timestamp','aproto','nproto','finished','finished_time'])
 
     appendingFields = set()
 
@@ -40,10 +40,10 @@ class normaliser():
         return datetime.datetime.fromtimestamp(float(log['ts'])).isoformat()
 
     def finished(self,log):
-        if (log['conn_state'] == u'S0' or log['conn_state'] == u'S1') and log['proto'] == 'tcp':
+        if (log['conn_state'] == 'S0' or log['conn_state'] == 'S1') and log['proto'] == 'tcp':
             return False
         else:
-            if log['conn_state'] == u'OTH' or log['proto'] != 'tcp':
+            if log['conn_state'] == 'OTH' or log['proto'] != 'tcp':
                 return None
             else:
                 return True

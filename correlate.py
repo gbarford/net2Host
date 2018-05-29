@@ -44,8 +44,8 @@ class correlateProcessing():
 
     def outputResult(self,rdKey):
         if self.rd.exists(rdKey):
-            logOutDict = fixListInJson(self.rd.hgetall(rdKey))
-            if 'elasticout' in configuration['correlate']:
+            logOutDict = self.fixListInJson(self.rd.hgetall(rdKey))
+            if 'elasticout' in self.configuration['correlate']:
                 timestamp = isoTimeRead(logOutDict['@timestamp'])
                 indexName = self.configuration['correlate']['index'] + "-" + str(timestamp.year) + "-" + str(
                     timestamp.month) + "-" + str(timestamp.day)
@@ -57,9 +57,11 @@ class correlateProcessing():
             self.rd.delete(rdKey)
 
     def readProcessingList(self,processingList):
-        tmpKey,eventTime=pickle.loads(rd.brpop(processingList, 0))
+        proKeyTmp,pickleEntry=self.rd.brpop(processingList, 0)
+        tmpKey,eventTime=pickle.loads(pickleEntry)
         currentTime=int(datetime.datetime.utcnow().strftime('%s'))
         sleepTime=eventTime-currentTime
+        print(sleepTime)
         if sleepTime>0:
             time.sleep(sleepTime)
         return tmpKey
@@ -82,35 +84,59 @@ class correlateProcessing():
 def processFinished():
     correlateWorker = correlateProcessing()
     while True:
-        key = correlateWorker.readProcessingList('toProcessFinished')
-        outputResult(key)
+        try:
+            key = correlateWorker.readProcessingList('toProcessFinished')
+            correlateWorker.outputResult(key)
+        except:
+            logging.error(sys.exc_info())
+            logging.error(traceback.format_exc())
+            pass
 
 def processNotFinished():
     correlateWorker = correlateProcessing()
     while True:
-        key = correlateWorker.readProcessingList('toProcessNotFinished')
-        if not checkHasFinished(key):
-            if checkNotFinishedLastToRecent(key):
-                addToNotFinished(key)
-            else:
-                outputResult(key)
+        try:
+            key = correlateWorker.readProcessingList('toProcessNotFinished')
+            if not correlateWorker.checkHasFinished(key):
+                if correlateWorker.checkNotFinishedLastToRecent(key):
+                    correlateWorker.addToNotFinished(key)
+                else:
+                    correlateWorker.outputResult(key)
+        except:
+            logging.error(sys.exc_info())
+            logging.error(traceback.format_exc())
+            pass
 
 
 def processStateless():
     correlateWorker = correlateProcessing()
     while True:
-        key = correlateWorker.readProcessingList('toProcessStateless')
-        if not checkHasFinished(key):
-            outputResult(key)
+        try:
+            key = correlateWorker.readProcessingList('toProcessStateless')
+            if not correlateWorker.checkHasFinished(key):
+                correlateWorker.outputResult(key)
+        except:
+            logging.error(sys.exc_info())
+            logging.error(traceback.format_exc())
+            pass
 
 
-
+print("starting correlation")
 
 threads = []
+
 t = threading.Thread(target=processFinished)
 threads.append(t)
+t.start()
+
 t = threading.Thread(target=processNotFinished)
 threads.append(t)
+t.start()
+
 t = threading.Thread(target=processStateless)
 threads.append(t)
 t.start()
+
+for t in threads:
+    t.join()
+

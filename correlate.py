@@ -66,17 +66,23 @@ class correlateProcessing():
             time.sleep(sleepTime)
         return tmpKey
 
-    def checkHasFinished(self,rdKey):
+    def checkHasFinishedKey(self,rdKey):
         return self.rd.hexists(rdKey,'finished')
+
+    def checkHasFinished(self,rdKey):
+        if self.rd.hget(rdKey,'finished') == "True":
+            return True
+        else:
+            return False
 
     def checkNotFinishedLastToRecent(self,rdKey):
         lastUpdateTime = isoTimeRead(str(self.rd.hget(rdKey,[b'corr_last_touch_time']), 'utf-8'))
-        return currentTime > lastUpdateTime + datetime.timedelta(0, 3600-360)
+        return datetime.datetime.utcnow() < lastUpdateTime + datetime.timedelta(0, self.configuration['correlateTime']['unfinished'])
 
     def addToNotFinished(self,rdKey):
         lastTouchTime = datetime.datetime.utcnow()
         lastTouchTimeSec = int(lastTouchTime.strftime('%s'))
-        self.rd.lpush('toProcessNotFinished', pickle.dumps((rdKey, lastTouchTimeSec + 3600)))
+        self.rd.lpush('toProcessNotFinishedRetain', pickle.dumps((rdKey, lastTouchTimeSec + self.configuration['correlateTime']['unfinished'])))
 
 
 
@@ -88,8 +94,24 @@ def processFinished():
             key = correlateWorker.readProcessingList('toProcessFinished')
             correlateWorker.outputResult(key)
         except:
-            logging.error(sys.exc_info())
-            logging.error(traceback.format_exc())
+            print(sys.exc_info())
+            print(traceback.format_exc())
+            pass
+
+
+def toProcessNotFinishedRetain():
+    correlateWorker = correlateProcessing()
+    while True:
+        try:
+            key = correlateWorker.readProcessingList('toProcessNotFinishedRetain')
+            if not correlateWorker.checkHasFinished(key):
+                if correlateWorker.checkNotFinishedLastToRecent(key):
+                    correlateWorker.addToNotFinished(key)
+                else:
+                    correlateWorker.outputResult(key)
+        except:
+            print(sys.exc_info())
+            print(traceback.format_exc())
             pass
 
 def processNotFinished():
@@ -98,13 +120,10 @@ def processNotFinished():
         try:
             key = correlateWorker.readProcessingList('toProcessNotFinished')
             if not correlateWorker.checkHasFinished(key):
-                if correlateWorker.checkNotFinishedLastToRecent(key):
-                    correlateWorker.addToNotFinished(key)
-                else:
-                    correlateWorker.outputResult(key)
+                correlateWorker.addToNotFinished(key)
         except:
-            logging.error(sys.exc_info())
-            logging.error(traceback.format_exc())
+            print(sys.exc_info())
+            print(traceback.format_exc())
             pass
 
 
@@ -113,11 +132,11 @@ def processStateless():
     while True:
         try:
             key = correlateWorker.readProcessingList('toProcessStateless')
-            if not correlateWorker.checkHasFinished(key):
+            if not correlateWorker.checkHasFinishedKey(key):
                 correlateWorker.outputResult(key)
         except:
-            logging.error(sys.exc_info())
-            logging.error(traceback.format_exc())
+            print(sys.exc_info())
+            print(traceback.format_exc())
             pass
 
 
@@ -134,6 +153,10 @@ threads.append(t)
 t.start()
 
 t = threading.Thread(target=processStateless)
+threads.append(t)
+t.start()
+
+t = threading.Thread(target=toProcessNotFinishedRetain)
 threads.append(t)
 t.start()
 

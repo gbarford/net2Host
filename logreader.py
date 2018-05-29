@@ -18,6 +18,9 @@ import pickle
 class dataProcess():
     def __init__(self,config,loggerName):
         global logger
+
+        self.configuration = config
+
         logger=logging.getLogger(loggerName)
         logger.info("connecting to redis DB")
         self.rd = initRedis(config)
@@ -161,17 +164,17 @@ class dataProcess():
                 if 'finished' in conn:
                     if conn['finished']==True:
                         logger.debug("trying to push into Finished list on db")
-                        self.rd.lpush('toProcessFinished', pickle.dumps((connectKey, lastTouchTimeSec + 60)))
+                        self.rd.lpush('toProcessFinished', pickle.dumps((connectKey, lastTouchTimeSec + self.configuration['correlateTime']['finished'])))
 
                     elif conn['finished']==False:
                         logger.debug("trying to push into toProcessNotFinished list on db")
-                        self.rd.lpush('toProcessNotFinished', pickle.dumps((connectKey, lastTouchTimeSec + 3600)))
+                        self.rd.lpush('toProcessNotFinished', pickle.dumps((connectKey, lastTouchTimeSec + self.configuration['correlateTime']['default'])))
                     else:
                         logger.debug("Finished None trying to push into toProcessStateless list on db")
-                        self.rd.lpush('toProcessStateless', pickle.dumps((connectKey, lastTouchTimeSec + 360)))
+                        self.rd.lpush('toProcessStateless', pickle.dumps((connectKey, lastTouchTimeSec + self.configuration['correlateTime']['default'])))
                 else:
                     logger.debug("trying to push into toProcessStateless list on db")
-                    self.rd.lpush('toProcessStateless',pickle.dumps((connectKey,lastTouchTimeSec + 360)))
+                    self.rd.lpush('toProcessStateless',pickle.dumps((connectKey,lastTouchTimeSec + self.configuration['correlateTime']['default'])))
             logger.debug("--------------------------------------------------------\n\n\n")
 
         except (ValueError, KeyError):

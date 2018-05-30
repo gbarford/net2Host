@@ -7,6 +7,7 @@ import os.path
 import time    
 import logging
 import pickle
+import signal
 
 CONFSTORE = None
 
@@ -101,6 +102,11 @@ def programControl(args,conf,loggerName,p):
             logger.error(traceback.format_exc())
             pass
 
+    elif 'nodaemon' == args[2]:
+        print('Starting without daemon')
+        signal.signal(signal.SIGTERM, processing.sigtermhandler)
+        signal.signal(signal.SIGINT, processing.sigtermhandler)
+        daemon.run()
 
     elif 'stop' == args[2]:
         print("Stopping ...")

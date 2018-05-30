@@ -61,7 +61,6 @@ class correlateProcessing():
         tmpKey,eventTime=pickle.loads(pickleEntry)
         currentTime=int(datetime.datetime.utcnow().strftime('%s'))
         sleepTime=eventTime-currentTime
-        print(sleepTime)
         if sleepTime>0:
             time.sleep(sleepTime)
         return tmpKey
@@ -104,11 +103,12 @@ def toProcessNotFinishedRetain():
     while True:
         try:
             key = correlateWorker.readProcessingList('toProcessNotFinishedRetain')
-            if not correlateWorker.checkHasFinished(key):
-                if correlateWorker.checkNotFinishedLastToRecent(key):
-                    correlateWorker.addToNotFinished(key)
-                else:
-                    correlateWorker.outputResult(key)
+            if checkHasFinishedKey:
+                if not correlateWorker.checkHasFinished(key):
+                    if correlateWorker.checkNotFinishedLastToRecent(key):
+                        correlateWorker.addToNotFinished(key)
+                    else:
+                        correlateWorker.outputResult(key)
         except:
             print(sys.exc_info())
             print(traceback.format_exc())
@@ -119,7 +119,7 @@ def processNotFinished():
     while True:
         try:
             key = correlateWorker.readProcessingList('toProcessNotFinished')
-            if not correlateWorker.checkHasFinished(key):
+            if checkHasFinishedKey and not correlateWorker.checkHasFinished(key):
                 correlateWorker.addToNotFinished(key)
         except:
             print(sys.exc_info())

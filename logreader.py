@@ -228,8 +228,8 @@ if __name__ == "__main__":
                 processing.process(l)
         else:
             print("Invalid number of args")
-            print("usage: %s <normalisation schema> [start|stop|restart|status] [logfile]" % sys.argv[0])
+            print("usage: %s <normalisation schema> [start|stop|restart|status|nodaemon] [logfile]" % sys.argv[0])
             exit(2)
     else:
-        print("usage: %s <normalisation schema> [start|stop|restart|status] [logfile]" % sys.argv[0])
+        print("usage: %s <normalisation schema> [start|stop|restart|status|nodaemon] [logfile]" % sys.argv[0])
         exit(2)

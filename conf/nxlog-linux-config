@@ -10,6 +10,7 @@ User nxlog
 Group nxlog
 
 LogFile /var/log/nxlog/nxlog.log
+define WINLOGFILE /var/log/nxlog/windows.log
 LogLevel INFO
 
 ########################################
@@ -20,21 +21,29 @@ LogLevel INFO
 </Extension>
 
 <Input in>
-    Module	im_tcp
-    Port	1514
-    Host    0.0.0.0   
+    Module      im_tcp
+    Port        1514
+    Host    0.0.0.0
 </Input>
 
+<Extension fileop>
+        Module  xm_fileop
+</Extension>
+
 <Output fileout>
-    Module	om_file
-    File	"/var/log/nxlog/windows.log"
+    Module      om_file
+    File        "%WINLOGFILE%"
+    <Schedule>
+        When    @hourly
+        Exec    file_cycle("%WINLOGFILE%",12); fileout->reopen();
+    </Schedule>
 </Output>
+
 
 ########################################
 # Routes                               #
 ########################################
 
 <Route tcproute>
-    Path	in => fileout
+    Path        in => fileout
 </Route>
-

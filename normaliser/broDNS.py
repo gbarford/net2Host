@@ -46,6 +46,8 @@ class normaliser():
     def finished(self,log):
         if log['proto'] == 'udp':
             return True
+        elif log['proto'] == 'tcp':
+            return False
         else:
             return None
 

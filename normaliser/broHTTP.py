@@ -15,7 +15,8 @@ class normaliser():
     initialValues = {
         'type_broHTTP' : 'True',
         'nproto' : 'tcp',
-        'aproto' : 'http'
+        'aproto' : 'http',
+        'finished' : 'False'
     }
 
     secondaryFields = {

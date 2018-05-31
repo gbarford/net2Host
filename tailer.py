@@ -104,8 +104,8 @@ def programControl(args,conf,loggerName,p):
 
     elif 'nodaemon' == args[2]:
         print('Starting without daemon')
-        signal.signal(signal.SIGTERM, processing.sigtermhandler)
-        signal.signal(signal.SIGINT, processing.sigtermhandler)
+        signal.signal(signal.SIGTERM, daemon.sigtermhandler)
+        signal.signal(signal.SIGINT, daemon.sigtermhandler)
         daemon.run()
 
     elif 'stop' == args[2]:

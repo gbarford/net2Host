@@ -15,7 +15,7 @@ LogLevel INFO
     Module im_msvistalog
     Query <QueryList> \
         <Query Id="0" Path="Security"> \
-             <Select Path="Security">*[System[(EventID=5156)]] and *[EventData[Data[@Name='Direction'] = '%%14593']]</Select> \
+             <Select Path="Security">*[System[(EventID=5156)]]</Select> \
         </Query> \
     </QueryList>
     Exec if $Application =~ /nxlog.exe$/ drop();

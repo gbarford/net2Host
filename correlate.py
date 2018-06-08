@@ -69,8 +69,11 @@ class correlateProcessing():
         return self.rd.hexists(rdKey,'finished')
 
     def checkHasFinished(self,rdKey):
-        if self.rd.hget(rdKey,'finished') == "True":
-            return True
+        if self.checkHasFinishedKey:
+            if self.rd.hget(rdKey,'finished') == "True":
+                return True
+            else:
+                return False
         else:
             return False
 
@@ -103,12 +106,11 @@ def toProcessNotFinishedRetain():
     while True:
         try:
             key = correlateWorker.readProcessingList('toProcessNotFinishedRetain')
-            if checkHasFinishedKey:
-                if not correlateWorker.checkHasFinished(key):
-                    if correlateWorker.checkNotFinishedLastToRecent(key):
-                        correlateWorker.addToNotFinished(key)
-                    else:
-                        correlateWorker.outputResult(key)
+            if not correlateWorker.checkHasFinished(key):
+                if correlateWorker.checkNotFinishedLastToRecent(key):
+                    correlateWorker.addToNotFinished(key)
+                else:
+                    correlateWorker.outputResult(key)
         except:
             print(sys.exc_info())
             print(traceback.format_exc())
@@ -119,7 +121,7 @@ def processNotFinished():
     while True:
         try:
             key = correlateWorker.readProcessingList('toProcessNotFinished')
-            if checkHasFinishedKey and not correlateWorker.checkHasFinished(key):
+            if not correlateWorker.checkHasFinished(key):
                 correlateWorker.addToNotFinished(key)
         except:
             print(sys.exc_info())

@@ -143,14 +143,15 @@ class dataProcess():
             for key, value in norm.corrlationFields.items():
                 logger.debug(key)
                 if value == '%--function--%':
-                    conn[key]=eval('norm.' + key + '(eventJson)')
+                    tempValue=eval('norm.' + key + '(eventJson)')
                 else:
-                    if key=='src_port' or key=='dst_port':
-                        conn[key] = int(eventJson[value])
-                    elif key=='src_ip' or key=='dst_ip':
-                        conn[key] = ipaddress.ip_address(eventJson[value])
-                    else:
-                        conn[key] = eventJson[value]
+                    tempValue = eventJson[value]
+                if key=='src_port' or key=='dst_port':
+                    conn[key] = int(tempValue)
+                elif key=='src_ip' or key=='dst_ip':
+                    conn[key] = ipaddress.ip_address(tempValue)
+                else:
+                    conn[key] = tempValue
             logger.debug(conn)
             lastTouchTime=datetime.datetime.utcnow()
             conn['corr_last_touch_time']=lastTouchTime.isoformat()

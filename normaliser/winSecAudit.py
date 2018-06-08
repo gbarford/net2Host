@@ -5,11 +5,11 @@ class normaliser():
     tailfile = '/var/log/nxlog/windows.log'
     
     corrlationFields = {
-        'src_ip' : 'SourceAddress',
-        'dst_ip' : 'DestAddress',
-        'src_port' : 'SourcePort',
+        'src_ip' : '%--function--%',
+        'dst_ip' : '%--function--%',
+        'src_port' : '%--function--%',
         'nproto': '%--function--%',
-        'dst_port' : 'DestPort'
+        'dst_port' : '%--function--%'
     }
 
     initialValues = {
@@ -18,8 +18,10 @@ class normaliser():
 
     secondaryFields = {
         'timestamp' : '%--function--%',
-        'process' : 'Application',
-        'processID': 'ProcessID'
+        'src_process' : '%--function--%',
+        'src_processID': '%--function--%',
+        'dst_process': '%--function--%',
+        'dst_processID': '%--function--%'
     }
 
     overwriteFields = set()
@@ -29,6 +31,58 @@ class normaliser():
     def timestamp(self,log):
 
         return datetime.datetime.fromtimestamp(float(log['EventReceivedTime'])/1000).isoformat()
+
+    def src_ip(self,log):
+        if log['Direction'] == '%%14593':
+            return log['SourceAddress']
+        elif log['Direction'] == '%%14592':
+            return log['DestAddress']
+        else:
+            return None
+
+    def src_port(self,log):
+        if log['Direction'] == '%%14593':
+            return log['SourcePort']
+        elif log['Direction'] == '%%14592':
+            return log['DestPort']
+        else:
+            return None
+
+    def dst_ip(self,log):
+        if log['Direction'] == '%%14593':
+            return log['DestAddress']
+        elif log['Direction'] == '%%14592':
+            return log['SourceAddress']
+        else:
+            return None
+
+    def dst_port(self,log):
+        if log['Direction'] == '%%14593':
+            return log['DestPort']
+        elif log['Direction'] == '%%14592':
+            return log['SourcePort']
+        else:
+            return None
+
+    def src_process(self,log):
+        if log['Direction'] == '%%14593':
+            return log['Application']
+        return None
+
+    def src_processID(self,log):
+        if log['Direction'] == '%%14593':
+            return log['ProcessID']
+        return None
+
+    def dst_process(self,log):
+        if log['Direction'] == '%%14592':
+            return log['Application']
+        return None
+
+    def dst_processID(self,log):
+        if log['Direction'] == '%%14592':
+            return log['ProcessID']
+        return None
 
     def nproto(self,log):
         protoDict = {

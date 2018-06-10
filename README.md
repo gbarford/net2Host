@@ -3,6 +3,8 @@ Net2Host
 
 You will need redis on your linux correlation host and bro
 
+Alternatively see the docker-elk repo which will build a test system using compose
+
 Conf directory Files:
 =====================
 

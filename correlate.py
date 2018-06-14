@@ -109,7 +109,7 @@ def toProcessNotFinishedRetain():
     while True:
         try:
             key = correlateWorker.readProcessingList('toProcessNotFinishedRetain')
-            if checkConnectionKey(key):
+            if correlateWorker.checkConnectionKey(key):
                 if not correlateWorker.checkHasFinished(key):
                     if correlateWorker.checkNotFinishedLastToRecent(key):
                         correlateWorker.addToNotFinished(key)
@@ -125,7 +125,7 @@ def processNotFinished():
     while True:
         try:
             key = correlateWorker.readProcessingList('toProcessNotFinished')
-            if checkConnectionKey(key):
+            if correlateWorker.checkConnectionKey(key):
                 if not correlateWorker.checkHasFinished(key):
                     correlateWorker.addToNotFinished(key)
         except:
